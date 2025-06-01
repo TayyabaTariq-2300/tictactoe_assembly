@@ -153,14 +153,14 @@ main_loop:
                 
         jmp     main_loop   
     
-    change_player:   
+change_player:   
         lea     si, player    
         xor     ds:[si], 1 
         
         ret
           
      
-    update_draw:
+update_draw:
         mov     bl, game_pointer[bx]
         mov     bh, 0
         
@@ -175,11 +175,11 @@ main_loop:
         mov     cl, "x"
         jmp     update
     
-    draw_o:          
+draw_o:          
         mov     cl, "o"  
         jmp     update    
               
-        update:         
+update:         
         mov     ds:[bx], cl
           
         ret 
@@ -191,7 +191,7 @@ check:
 check_line:
         mov     cx, 0
         
-        check_line_loop:     
+check_line_loop:     
         cmp     cx, 0
         je      first_line
         
@@ -204,11 +204,11 @@ check_line:
         call    check_column
         ret    
             
-        first_line:    
+first_line:    
         mov     si, 0   
         jmp     do_check_line   
     
-        second_line:    
+second_line:    
         mov     si, 3
         jmp     do_check_line
         
@@ -216,7 +216,7 @@ check_line:
         mov     si, 6
         jmp     do_check_line        
     
-    do_check_line:
+do_check_line:
         inc     cx
       
         mov     bh, 0
@@ -238,10 +238,10 @@ check_line:
         mov     win_flag, 1
         ret         
            
-    check_column:
+check_column:
         mov     cx, 0
         
-        check_column_loop:     
+check_column_loop:     
         cmp     cx, 0
         je      first_column
         
@@ -254,19 +254,19 @@ check_line:
         call    check_diagonal
         ret    
             
-        first_column:    
+first_column:    
         mov     si, 0   
         jmp     do_check_column   
     
-        second_column:    
+second_column:    
         mov     si, 1
         jmp     do_check_column
         
-        third_column:    
+third_column:    
         mov     si, 2
         jmp     do_check_column        
     
-    do_check_column:
+do_check_column:
         inc     cx
       
         mov     bh, 0
@@ -289,10 +289,10 @@ check_line:
         ret        
     
     
-    check_diagonal:
+check_diagonal:
         mov     cx, 0
         
-        check_diagonal_loop:     
+check_diagonal_loop:     
         cmp     cx, 0
         je      first_diagonal
         
@@ -301,17 +301,17 @@ check_line:
         
         ret    
             
-        first_diagonal:    
+first_diagonal:    
         mov     si, 0                
         mov     dx, 4 
         jmp     do_check_diagonal   
     
-        second_diagonal:    
+second_diagonal:    
         mov     si, 2
         mov     dx, 2
         jmp     do_check_diagonal       
     
-    do_check_diagonal:
+do_check_diagonal:
         inc     cx
       
         mov     bh, 0
@@ -333,7 +333,7 @@ check_line:
         mov     win_flag, 1
         ret  
                
-    game_over:        
+game_over:        
         ; Show celebration window first
         call    show_celebration_window
         
@@ -379,13 +379,13 @@ check_line:
         je      begin_game
         jmp     fim
       
-    set_game_pointer:
+set_game_pointer:
         lea     si, game_draw
         lea     bx, game_pointer          
                   
         mov     cx, 9   
         
-    loop_1:
+loop_1:
         cmp     cx, 6
         je      add_1                
         
@@ -394,11 +394,11 @@ check_line:
         
         jmp     add_2 
         
-    add_1:
+add_1:
         add     si, 1
         jmp     add_2     
           
-    add_2:                                
+add_2:                                
         mov     ds:[bx], si 
         add     si, 2
                             
@@ -408,26 +408,26 @@ check_line:
         ret  
 
     ; Save current video mode
-    save_video_mode:
+save_video_mode:
         mov ah, 0Fh        ; Get current video mode
         int 10h
         mov old_video_mode, al
         ret
     
     ; Restore previous video mode
-    restore_video_mode:
+restore_video_mode:
         mov ah, 00h
         mov al, old_video_mode
         int 10h
         ret
              
-    print:      
+print:      
         mov     ah, 9
         int     21h   
         
         ret 
         
-   clear_screen:
+clear_screen:
     mov ah, 06h  ; Scroll up function
     mov al, 00h  ; Scroll entire screen
     mov bh, 1Eh  ; **Background Blue (1) + Text Yellow (E)**
@@ -436,11 +436,8 @@ check_line:
     int 10h       ; Call BIOS interrupt
 
     ret
-   ; Fast graphics celebration window - replace the graphics procedures
 
 ; Show celebration window when game ends
-
-       
 show_celebration_window:
     ; Save current video mode
     call save_video_mode
@@ -450,12 +447,13 @@ show_celebration_window:
     mov al, 13h
     int 10h
     
-   
+    ; Clear screen with black background
+    call clear_graphics_screen
     
-    ; Draw celebration elements directly (no background clearing)
+    ; Draw celebration elements
     call draw_celebration_border
-    call draw_smiley_face
-    call draw_stars
+    call draw_multiple_trophies
+    call draw_multiple_stars
     call draw_celebration_text
     
     ; Wait for key press
@@ -466,286 +464,451 @@ show_celebration_window:
     call restore_video_mode
     ret
 
-; Draw colorful border (much simpler and faster)
+; Clear graphics screen - much faster method
+clear_graphics_screen:
+    ; Use BIOS function to clear screen in graphics mode
+    mov ah, 00h        ; Set video mode (clears screen automatically)
+    mov al, 13h        ; 320x200, 256 colors
+    int 10h
+    ret
+
+; Draw colorful border (simplified and faster)
 draw_celebration_border:
-    ; Top border - single line
-    mov dx, 50         ; Y coordinate
-    mov cx, 50         ; Start X
+    ; Top border - single thick line
+    mov dx, 10         ; Y coordinate
+    mov cx, 10         ; Start X
+    mov al, 14         ; Yellow color
+    mov ah, 0Ch        ; Set pixel
     
 top_border_loop:
-    mov ah, 0Ch        ; Set pixel
-    mov al, 14         ; Yellow color
     int 10h
     inc cx
-    cmp cx, 270
-    jle top_border_loop
+    cmp cx, 310
+    jl top_border_loop
     
     ; Bottom border
-    mov dx, 150        ; Y coordinate
-    mov cx, 50         ; Start X
+    mov dx, 180        ; Y coordinate
+    mov cx, 10         ; Start X
     
 bottom_border_loop:
-    mov ah, 0Ch
-    mov al, 14         ; Yellow color
     int 10h
     inc cx
-    cmp cx, 270
-    jle bottom_border_loop
+    cmp cx, 310
+    jl bottom_border_loop
     
     ; Left border
-    mov cx, 50         ; X coordinate
-    mov dx, 50         ; Start Y
+    mov cx, 10         ; X coordinate
+    mov dx, 10         ; Start Y
     
 left_border_loop:
-    mov ah, 0Ch
-    mov al, 14         ; Yellow color
     int 10h
     inc dx
-    cmp dx, 150
-    jle left_border_loop
+    cmp dx, 180
+    jl left_border_loop
     
     ; Right border
-    mov cx, 270        ; X coordinate
-    mov dx, 50         ; Start Y
+    mov cx, 310        ; X coordinate
+    mov dx, 10         ; Start Y
     
 right_border_loop:
-    mov ah, 0Ch
-    mov al, 14         ; Yellow color
     int 10h
     inc dx
-    cmp dx, 150
-    jle right_border_loop
+    cmp dx, 180
+    jl right_border_loop
     
     ret
 
-; Draw a simple smiley face
-draw_smiley_face:
-    ; Face outline (circle approximation - much simpler)
-    mov cx, 160        ; Center X
-    mov dx, 80         ; Center Y
-    mov al, 14         ; Yellow color
-    call draw_simple_circle
+; Draw multiple trophies
+draw_multiple_trophies:
+    ; Large central trophy
+    mov cx, 140
+    mov dx, 30
+    call draw_large_trophy
     
-    ; Left eye
-    mov cx, 150
-    mov dx, 75
-    mov al, 0          ; Black color
-    call draw_eye
+    ; Left trophy
+    mov cx, 60
+    mov dx, 35
+    call draw_medium_trophy
     
-    ; Right eye
-    mov cx, 170
-    mov dx, 75
-    mov al, 0          ; Black color
-    call draw_eye
-    
-    ; Simple smile
-    mov cx, 155        ; Start X
-    mov dx, 85         ; Y coordinate
-    mov al, 0          ; Black color
-    
-smile_loop:
-    mov ah, 0Ch
-    int 10h
-    inc cx
-    cmp cx, 165
-    jle smile_loop
+    ; Right trophy
+    mov cx, 220
+    mov dx, 35
+    call draw_medium_trophy
     
     ret
 
-; Draw simple circle (much faster approximation)
-draw_simple_circle:
+; Draw large trophy
+draw_large_trophy:
     push cx
     push dx
     
-    ; Draw horizontal lines to approximate circle
-    mov bx, 8          ; Radius approximation
-    
-circle_outer_loop:
-    push bx
-    mov dx, 80         ; Reset to center Y
-    sub dx, bx         ; Top part
-    
-    mov cx, 152        ; Left side
-    add cx, bx
-    mov si, 168        ; Right side  
-    sub si, bx
-    
-circle_inner_loop:
+    ; Trophy handles (left and right)
+    mov al, 6          ; Brown color for handles
     mov ah, 0Ch
+    
+    ; Left handle
+    sub cx, 8
+    add dx, 5
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    dec cx
+    int 10h
+    dec dx
+    int 10h
+    dec dx
+    int 10h
+    
+    ; Right handle
+    pop dx
+    pop cx
+    push cx
+    push dx
+    add cx, 20
+    add dx, 5
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     inc cx
-    cmp cx, si
-    jle circle_inner_loop
+    int 10h
+    dec dx
+    int 10h
+    dec dx
+    int 10h
     
-    ; Bottom part
-    mov dx, 80         ; Center Y
-    add dx, bx         ; Bottom part
-    mov cx, 152
-    add cx, bx
+    ; Trophy cup (large)
+    pop dx
+    pop cx
+    push cx
+    push dx
     
-circle_inner_loop2:
+    mov al, 14         ; Yellow/gold color
     mov ah, 0Ch
+    
+    ; Cup outline - larger
+    mov bx, 8          ; Width counter
+    
+trophy_cup_loop:
     int 10h
     inc cx
-    cmp cx, si
-    jle circle_inner_loop2
-    
-    pop bx
     dec bx
-    jnz circle_outer_loop
+    jnz trophy_cup_loop
+    
+    ; Cup sides - multiple lines for height
+    pop dx
+    pop cx
+    push cx
+    push dx
+    
+    mov bx, 6          ; Height counter
+    
+trophy_sides_loop:
+    int 10h            ; Left side
+    add cx, 12
+    int 10h            ; Right side
+    sub cx, 12
+    inc dx
+    dec bx
+    jnz trophy_sides_loop
+    
+    ; Cup bottom
+    mov bx, 8
+    
+trophy_bottom_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz trophy_bottom_loop
+    
+    ; Trophy base
+    pop dx
+    pop cx
+    add dx, 8
+    sub cx, 2
+    
+    mov al, 4          ; Red color for base
+    mov bx, 12
+    
+trophy_base_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz trophy_base_loop
+    
+    ; Base bottom line
+    sub cx, 12
+    inc dx
+    mov bx, 12
+    
+trophy_base_bottom_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz trophy_base_bottom_loop
+    
+    ret
+
+; Draw medium trophy
+draw_medium_trophy:
+    push cx
+    push dx
+    
+    ; Trophy cup (medium)
+    mov al, 14         ; Yellow/gold color
+    mov ah, 0Ch
+    
+    ; Cup outline
+    mov bx, 6          ; Width counter
+    
+med_trophy_cup_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz med_trophy_cup_loop
+    
+    ; Cup sides
+    pop dx
+    pop cx
+    push cx
+    push dx
+    
+    mov bx, 4          ; Height counter
+    
+med_trophy_sides_loop:
+    int 10h            ; Left side
+    add cx, 8
+    int 10h            ; Right side
+    sub cx, 8
+    inc dx
+    dec bx
+    jnz med_trophy_sides_loop
+    
+    ; Cup bottom
+    mov bx, 6
+    
+med_trophy_bottom_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz med_trophy_bottom_loop
+    
+    ; Base
+    pop dx
+    pop cx
+    add dx, 5
+    sub cx, 1
+    
+    mov al, 4          ; Red color
+    mov bx, 8
+    
+med_trophy_base_loop:
+    int 10h
+    inc cx
+    dec bx
+    jnz med_trophy_base_loop
+    
+    ret
+
+; Draw multiple stars around the screen
+draw_multiple_stars:
+    ; Top stars
+    mov cx, 30
+    mov dx, 25
+    call draw_large_star
+    
+    mov cx, 280
+    mov dx, 25
+    call draw_large_star
+    
+    ; Side stars
+    mov cx, 25
+    mov dx, 80
+    call draw_medium_star
+    
+    mov cx, 285
+    mov dx, 80
+    call draw_medium_star
+    
+    ; Bottom stars
+    mov cx, 40
+    mov dx, 160
+    call draw_medium_star
+    
+    mov cx, 270
+    mov dx, 160
+    call draw_medium_star
+    
+    ; Additional decorative stars
+    mov cx, 80
+    mov dx, 20
+    call draw_small_star
+    
+    mov cx, 230
+    mov dx, 20
+    call draw_small_star
+    
+    mov cx, 20
+    mov dx, 120
+    call draw_small_star
+    
+    mov cx, 290
+    mov dx, 120
+    call draw_small_star
+    
+    ret
+
+; Draw large star
+draw_large_star:
+    push cx
+    push dx
+    
+    mov al, 15         ; White color
+    mov ah, 0Ch
+    
+    ; Center cross (larger)
+    int 10h
+    
+    ; Horizontal line (longer)
+    dec cx
+    int 10h
+    dec cx
+    int 10h
+    inc cx
+    inc cx
+    inc cx
+    int 10h
+    inc cx
+    int 10h
+    sub cx, 2          ; Back to center
+    
+    ; Vertical line (longer)
+    dec dx
+    int 10h
+    dec dx
+    int 10h
+    inc dx
+    inc dx
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    sub dx, 2          ; Back to center
+    
+    ; Diagonals
+    dec cx
+    dec dx
+    int 10h
+    inc cx
+    inc cx
+    int 10h
+    dec cx
+    inc dx
+    inc dx
+    int 10h
+    dec cx
+    int 10h
     
     pop dx
     pop cx
     ret
 
-; Draw simple eye
-draw_eye:
-    mov ah, 0Ch
-    int 10h            ; Center pixel
-    inc cx
-    int 10h            ; Right pixel
-    dec cx
-    dec cx
-    int 10h            ; Left pixel
-    inc cx
-    inc dx
-    int 10h            ; Bottom pixel
-    ret
-
-; Draw decorative stars (much simpler)
-draw_stars:
-    ; Star 1
-    mov cx, 80
-    mov dx, 60
-    call draw_simple_star
-    
-    ; Star 2
-    mov cx, 240
-    mov dx, 60
-    call draw_simple_star
-    
-    ; Star 3
-    mov cx, 90
-    mov dx, 140
-    call draw_simple_star
-    
-    ; Star 4
-    mov cx, 230
-    mov dx, 140
-    call draw_simple_star
-    
-    ret
-
-; Draw simple star (just a cross)
-draw_simple_star:
+; Draw medium star
+draw_medium_star:
     push cx
     push dx
     
-    mov al, 15         ; White color
+    mov al, 11         ; Cyan color
     mov ah, 0Ch
     
     ; Center
     int 10h
     
-    ; Horizontal line
+    ; Cross pattern
     dec cx
     int 10h
     inc cx
     inc cx
     int 10h
-    dec cx             ; Back to center
+    dec cx
     
-    ; Vertical line
     dec dx
     int 10h
     inc dx
     inc dx
+    int 10h
+    dec dx
+    
+    ; Small diagonals
+    dec cx
+    dec dx
+    int 10h
+    inc cx
+    inc cx
+    int 10h
+    dec cx
+    inc dx
+    inc dx
+    int 10h
+    dec cx
     int 10h
     
     pop dx
     pop cx
     ret
 
-; Draw bigger celebration text and emoji
-draw_celebration_text:
-    ; Draw trophy emoji first
-    call draw_trophy_emoji
-    
-    ; Draw "WINNER!" as bigger block letters
-    call draw_big_W
-    call draw_big_I
-    call draw_big_N1
-    call draw_big_N2
-    call draw_big_E
-    call draw_big_R
-    call draw_big_exclamation
-    ret
-
-; Draw trophy emoji
-draw_trophy_emoji:
-    ; Trophy cup (yellow)
-    mov cx, 160
-    mov dx, 65
-    mov al, 14         ; Yellow
+; Draw small star
+draw_small_star:
+    mov al, 13         ; Magenta color
     mov ah, 0Ch
     
-    ; Cup outline
+    ; Simple cross
+    int 10h
+    dec cx
     int 10h
     inc cx
-    int 10h
     inc cx
     int 10h
-    inc cx
+    dec cx
+    dec dx
     int 10h
-    
-    ; Cup sides
-    dec cx
-    dec cx
-    dec cx
     inc dx
-    int 10h
-    add cx, 3
-    int 10h
-    
-    ; Cup bottom
-    dec cx
-    dec cx
     inc dx
-    int 10h
-    inc cx
-    int 10h
-    
-    ; Base (brown/red)
-    mov al, 4          ; Red color for base
-    inc dx
-    dec cx
-    int 10h
-    inc cx
-    int 10h
-    inc cx
     int 10h
     
     ret
 
-; Big block letter drawing (double size)
-draw_big_W:
-    mov cx, 80         ; Start position (moved left for bigger text)
-    mov dx, 110
+; Draw celebration text - LARGE and CENTERED
+draw_celebration_text:
+    ; Draw "WINNER!" with letters centered in 320px width
+    ; Total text width is approximately 110 pixels
+    ; Starting position: (320-110)/2 = 105
+    call draw_large_W
+    call draw_large_I
+    call draw_large_N1
+    call draw_large_N2
+    call draw_large_E
+    call draw_large_R
+    call draw_large_exclamation
+    ret
+
+; Large letter W (centered)
+draw_large_W:
+    mov cx, 105        ; Centered start position
+    mov dx, 120
     mov al, 15         ; White color
     mov ah, 0Ch
     
-    ; Left vertical line (double height)
+    ; Left vertical line
     int 10h
     inc dx
     int 10h
     inc dx
     int 10h
     inc dx
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
     int 10h
     inc dx
     int 10h
@@ -758,30 +921,43 @@ draw_big_W:
     inc dx
     int 10h
     
-    ; Middle bottom points
+    ; Bottom middle point
     inc cx
     int 10h
     inc cx
+    dec dx
+    int 10h
+    inc cx
+    dec dx
     int 10h
     
     ; Right vertical line
     inc cx
-    dec dx
+    sub dx, 6
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     
     ret
 
-draw_big_I:
-    mov cx, 95
-    mov dx, 110
+; Large letter I (centered)
+draw_large_I:
+    mov cx, 120        ; Adjusted for centering
+    mov dx, 120
     mov al, 15
     mov ah, 0Ch
     
@@ -791,14 +967,17 @@ draw_big_I:
     int 10h
     inc cx
     int 10h
-    int 10h
     inc cx
     int 10h
     inc cx
     int 10h
     
     ; Middle vertical
-    dec cx
+    sub cx, 2          ; Center
+    inc dx
+    int 10h
+    inc dx
+    int 10h
     inc dx
     int 10h
     inc dx
@@ -809,13 +988,12 @@ draw_big_I:
     int 10h
     
     ; Bottom horizontal
-    dec cx
+    sub cx, 2
     inc dx
     int 10h
     inc cx
     int 10h
     inc cx
-    int 10h
     int 10h
     inc cx
     int 10h
@@ -824,51 +1002,10 @@ draw_big_I:
     
     ret
 
-draw_big_N1:
-    mov cx, 110
-    mov dx, 110
-    mov al, 15
-    mov ah, 0Ch
-    
-    ; Left vertical (double height)
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
-    
-    ; Diagonal
-    dec dx
-    inc cx
-    int 10h
-    dec dx
-    inc cx
-    int 10h
-    
-    ; Right vertical
-    inc cx
-    dec dx
-    int 10h
-    dec dx
-    int 10h
-    dec dx
-    int 10h
-    inc dx
-    int 10h
-    inc dx
-    int 10h
-    
-    ret
-
-draw_big_N2:
-    mov cx, 125
-    mov dx, 110
+; Large letter N (first - centered)
+draw_large_N1:
+    mov cx, 135        ; Adjusted for centering
+    mov dx, 120
     mov al, 15
     mov ah, 0Ch
     
@@ -884,29 +1021,117 @@ draw_big_N2:
     int 10h
     inc dx
     int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    
+    ; Diagonal
+    sub dx, 4
+    inc cx
+    int 10h
+    inc cx
+    inc dx
+    int 10h
+    inc cx
+    inc dx
+    int 10h
     
     ; Right vertical
-    add cx, 3
-    dec dx
+    inc cx
+    sub dx, 6
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
     int 10h
-    dec dx
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     
     ret
 
-draw_big_E:
-    mov cx, 140
-    mov dx, 110
+; Large letter N (second - centered)
+draw_large_N2:
+    mov cx, 150        ; Adjusted for centering
+    mov dx, 120
     mov al, 15
     mov ah, 0Ch
     
-    ; Vertical line (double height)
+    ; Left vertical
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    
+    ; Diagonal
+    sub dx, 4
+    inc cx
+    int 10h
+    inc cx
+    inc dx
+    int 10h
+    inc cx
+    inc dx
+    int 10h
+    
+    ; Right vertical
+    inc cx
+    sub dx, 6
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    
+    ret
+
+; Large letter E (centered)
+draw_large_E:
+    mov cx, 165        ; Adjusted for centering
+    mov dx, 120
+    mov al, 15
+    mov ah, 0Ch
+    
+    ; Left vertical
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     inc dx
     int 10h
@@ -920,10 +1145,11 @@ draw_big_E:
     int 10h
     
     ; Top horizontal
-    dec dx
-    dec dx
-    dec dx
-    dec dx
+    sub dx, 8
+    int 10h
+    inc cx
+    int 10h
+    inc cx
     int 10h
     inc cx
     int 10h
@@ -931,18 +1157,23 @@ draw_big_E:
     int 10h
     
     ; Middle horizontal
-    dec cx
-    dec cx
-    inc dx
-    inc dx
+    sub cx, 4
+    add dx, 4
+    int 10h
+    inc cx
+    int 10h
+    inc cx
     int 10h
     inc cx
     int 10h
     
     ; Bottom horizontal
-    dec cx
-    inc dx
-    inc dx
+    sub cx, 3
+    add dx, 4
+    int 10h
+    inc cx
+    int 10h
+    inc cx
     int 10h
     inc cx
     int 10h
@@ -951,13 +1182,20 @@ draw_big_E:
     
     ret
 
-draw_big_R:
-    mov cx, 155
-    mov dx, 110
+; Large letter R (centered)
+draw_large_R:
+    mov cx, 180        ; Adjusted for centering
+    mov dx, 120
     mov al, 15
     mov ah, 0Ch
     
-    ; Vertical line (double height)
+    ; Left vertical
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     inc dx
     int 10h
@@ -971,21 +1209,32 @@ draw_big_R:
     int 10h
     
     ; Top horizontal
-    dec dx
-    dec dx
-    dec dx
-    dec dx
+    sub dx, 8
+    int 10h
+    inc cx
     int 10h
     inc cx
     int 10h
     inc cx
     int 10h
     
-    ; Middle horizontal  
+    ; Right top vertical
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    
+    ; Middle horizontal
+    dec cx
     dec cx
     dec cx
     inc dx
-    inc dx
+    int 10h
+    inc cx
+    int 10h
+    inc cx
     int 10h
     inc cx
     int 10h
@@ -996,25 +1245,37 @@ draw_big_R:
     inc cx
     inc dx
     int 10h
+    inc cx
+    inc dx
+    int 10h
     
     ret
 
-draw_big_exclamation:
-    mov cx, 175
-    mov dx, 110
+; Large exclamation mark (centered)
+draw_large_exclamation:
+    mov cx, 200        ; Adjusted for centering
+    mov dx, 120
     mov al, 15
     mov ah, 0Ch
     
-    ; Vertical line (bigger)
+    ; Vertical line
+    int 10h
+    inc dx
+    int 10h
+    inc dx
+    int 10h
+    inc dx
     int 10h
     inc dx
     int 10h
     inc dx
     int 10h
     
-    ; Dot (bigger)
+    ; Gap
     inc dx
     inc dx
+    
+    ; Dot
     int 10h
     inc cx
     int 10h
@@ -1025,7 +1286,9 @@ draw_big_exclamation:
     int 10h
     
     ret
-           
+    
+    
+    
     read_keyboard:  
         mov     ah, 1       
         int     21h  
